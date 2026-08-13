@@ -92,7 +92,7 @@ LD_PRELOAD="$PWD/build/libobscure.so" grep flag /no/such/ctf
 ### Python 异常
 
 ```sh
-python3 -c 'open("/no/such/file")'
+LD_PRELOAD="$PWD/build/libobscure.so" python3 -c 'open("/no/such/file")'
 ```
 
 ```text
@@ -108,7 +108,7 @@ FileNotFoundError: [Errno 2] Something went wrong. Error code: 0x80070002. Ask y
 当然，你也可以直接调用
 
 ```bash
-python3 -c 'import os; print(os.strerror(2))'
+LD_PRELOAD="$PWD/build/libobscure.so" python3 -c 'import os; print(os.strerror(2))'
 ```
 
 这会直接打印对应 errno 的 `strerror` 字符串值。可以看到，对于不同的 errno 值，只有 `Error code: 0x8007xxxx` 不同。
@@ -199,8 +199,6 @@ GPT 5.6-sol & DeepSeek V4 Flash
 ---
 
 <div align="center">
-
-<br/>
 
 🍀 | 🌌 | 🪼 | ❄️
 
