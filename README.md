@@ -87,7 +87,17 @@ LD_PRELOAD="$PWD/build/libobscure.so" grep flag /no/such/ctf
 
 这里洛汐使用了 `/bin/ls` 和 `/bin/cat` 以指定具体的 binary，因为在洛汐的 Fedora 上，洛汐将 `ls` 和 `cat` alias 到了 `eza` 和 `bat`，而后者有自己的错误处理逻辑。一般你无须添加 `/bin` 前缀。
 
-这些操作仍然会以非零状态退出，使用 `echo $?` 可以查看原先的返回值。`libobscure` 不改变文件操作逻辑，仅替换了错误说明。
+这些操作仍然会以非零状态退出，使用 `echo $?` 可以查看原先的返回值。`libobscure` 不改变文件操作逻辑，仅替换了错误说明。这里，`errno` 到 `0x8007xxxx` 是 1:1 映射，不止 `ENOENT`。比如权限不足时：
+
+```sh
+LD_PRELOAD="$PWD/build/libobscure.so" /bin/cat /root/secret
+```
+
+```text
+cat: /root/secret: Something went wrong. Error code: 0x8007000D. Ask your system administrator.
+```
+
+这里的 `0x8007000D` 对应 `EACCES`。
 
 ### Python 异常
 
@@ -112,6 +122,30 @@ LD_PRELOAD="$PWD/build/libobscure.so" python3 -c 'import os; print(os.strerror(2
 ```
 
 这会直接打印对应 errno 的 `strerror` 字符串值。可以看到，对于不同的 errno 值，只有 `Error code: 0x8007xxxx` 不同。
+
+### 网络错误
+
+DNS 解析失败走的是 `gai_strerror()`，它不读 `errno` 而是使用 `EAI_*` 错误码。`libobscure` 故意忽略 `ecode`，恒定返回 Windows Socket 的 `WSAECONNREFUSED`：
+
+```sh
+LD_PRELOAD="$PWD/build/libobscure.so" ping -c1 nonexistent.invalid
+```
+
+```text
+ping: nonexistent.invalid: Something went wrong. Error code: 0x8007274D. Ask your system administrator.
+```
+
+`0x8007274D` 是 `WSAECONNREFUSED` 的 HRESULT 值，而非实际应返回的 `EAI_NONAME`。
+
+Python 侧同样被覆盖：
+
+```sh
+python3 -c 'import socket; socket.getaddrinfo("nonexistent.invalid", 80)'
+```
+
+```text
+socket.gaierror: [Errno -2] Something went wrong. Error code: 0x8007274D. Ask your system administrator.
+```
 
 ### 注入到 Shell
 
