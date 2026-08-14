@@ -114,3 +114,5 @@ tags
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/linux,visualstudiocode,vim,direnv,c
+
+build/
